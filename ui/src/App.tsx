@@ -1,22 +1,14 @@
 import { useEffect, useState } from "react";
-import "./App.css";
 
-import init, { hello_world } from "../../engine/pkg/engine";
+import * as Core from "../../engine/pkg/engine";
+import PieceView from "./components/PieceView";
 
 function App() {
-	const [message, setMessage] = useState("");
-
-	useEffect(() => {
-		init().then(() => {
-			const msg = hello_world("from Wasm");
-			setMessage(msg);
-		});
-	}, []);
-
 	return (
-		<div className="App">
-			<h1>{message}</h1>
-		</div>
+		<>
+			<PieceView player={Core.Piece.Player1} className="text-yellow-500" />
+			<PieceView player={Core.Piece.Player2} />
+		</>
 	);
 }
 
