@@ -1,71 +1,118 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import init, { GameEngine, Piece } from "@engine";
-import PieceView from "./components/PieceView";
 import HandView from "./components/HandView";
-import CellView from "./components/CellView";
 import BoardView from "./components/BoardView";
-import FlickControls from "./components/FliickControls";
 
 function App() {
 	const [engine, setEngine] = useState<GameEngine | null>(null);
-	const [selected, setSelected] = useState<Piece | number | null>(null);
+	const [board, setBoard] = useState<Piece[]>([]);
+	const [handCounts, setHandCounts] = useState({
+		p1: 0,
+		p2: 0,
+	});
 
-	useEffect(() => {
-		init().then(() => {
-			const engine = GameEngine.new();
-			setEngine(engine);
-			return () => {
-				engine.free();
-			};
+	const [selected, setSelected] = useState<
+		"Player1" | "Player2" | number | null
+	>(null);
+
+	const syncGameState = useCallback((eng: GameEngine) => {
+		// setBoard(Array.from(eng.get_board()));
+		setBoard(eng.get_board());
+		setHandCounts({
+			p1: eng.get_hand_count(Piece.Player1),
+			p2: eng.get_hand_count(Piece.Player2),
 		});
 	}, []);
 
-	return (
-		<>
-			<PieceView player={Piece.Player1} className="size-10" />
-			<div className="w-dvh">
-				<PieceView player={Piece.Player1} />
+	useEffect(() => {
+		// アンマウント済みか判定するフラグ
+		let active = true;
+		// クリーンアップ用にローカル変数で保持する
+		let localEngine: GameEngine | null = null;
+
+		const loadEngine = async () => {
+			await init(); // Wasm初期化
+
+			if (!active) return; // すでにアンマウントされていたら中断
+
+			localEngine = GameEngine.new();
+			setEngine(localEngine);
+			syncGameState(localEngine);
+		};
+
+		loadEngine();
+
+		return () => {
+			active = false;
+
+			if (localEngine) {
+				localEngine.free();
+			}
+		};
+	}, [syncGameState]);
+
+	const handleAction = (action: unknown) => {
+		if (!engine) return;
+		engine.apply_action(action);
+		syncGameState(engine);
+	};
+
+	return engine ? (
+		<div className="min-h-svh flex flex-row justify-center items-center bg-white p-4 gap-4">
+			<div className="flex flex-col w-lg justify-center items-center gap-4">
+				<HandView
+					player={Piece.Player1}
+					count={handCounts.p1}
+					isSelected={selected === "Player1"}
+					onClick={() => setSelected(selected === "Player1" ? null : "Player1")}
+					className="w-md"
+				/>
+				<BoardView
+					board={board}
+					selectedIndex={
+						typeof selected === "number" ? (selected as number) : null
+					}
+					onCellClick={(index) => {
+						if (board[index] === Piece.Empty) {
+							if (selected === "Player1" || selected === "Player2") {
+								handleAction({
+									type: "Put",
+									data: {
+										index,
+										value: Piece[selected],
+									},
+								});
+								setSelected(null);
+							}
+						} else setSelected(index === selected ? null : index);
+					}}
+					onFlick={(index, dx, dy) => {
+						handleAction({
+							type: "Flick",
+							data: {
+								index,
+								dx,
+								dy,
+							},
+						});
+						setSelected(null);
+					}}
+					className="w-lg"
+				/>
+				<HandView
+					player={Piece.Player2}
+					count={handCounts.p2}
+					isSelected={selected === "Player2"}
+					onClick={() => setSelected(selected === "Player2" ? null : "Player2")}
+					className="w-md"
+				/>
 			</div>
-			<PieceView player={Piece.Player2} />
-			<HandView
-				player={Piece.Player1}
-				count={3}
-				className="mt-4 w-lg"
-				onClick={() => {
-					setSelected(Piece.Player1);
-				}}
-				isSelected={selected === Piece.Player1}
-			/>
-			<CellView
-				piece={Piece.Player2}
-				isSelected={false}
-				onClick={() => {
-					alert("clicked");
-				}}
-				onFlick={() => {
-					alert("flicked");
-				}}
-				className="size-30"
-			/>
-			<BoardView
-				board={Array(25).fill(Piece.Player1)}
-				onCellClick={(index) => {
-					setSelected(index);
-				}}
-				onFlick={(index, dx, dy) => {
-					alert(`Cell ${index} flicked with delta (${dx}, ${dy})`);
-				}}
-				selectedIndex={typeof selected === "number" ? selected : null}
-				className="mt-4 w-lg"
-			/>
-			<FlickControls
-				onFlick={(dx, dy) => {
-					alert(`Flicked with delta (${dx}, ${dy})`);
-				}}
-				className="mt-4"
-			/>
-		</>
+		</div>
+	) : (
+		<div className="min-h-svh flex flex-col justify-center items-center bg-white p-4 gap-4">
+			Loading...
+		</div>
 	);
 }
 

@@ -19,14 +19,17 @@ export default function CellView({
 	className,
 }: CellViewProps) {
 	return (
-		<button
+		// biome-ignore lint/a11y/useSemanticElements: ゲーム実装の都合上
+		<div
+			role="button"
+			tabIndex={0}
+			onKeyDown={onClick}
 			className={clsx(
-				"relative flex items-center justify-center bg-white rounded-xl shadow-md p-4",
+				"relative flex items-center justify-center bg-white rounded-xl shadow-md p-4 aspect-square",
 				className,
 				{ "ring-4 ring-blue-400": isSelected },
 			)}
 			onClick={onClick}
-			type="button"
 		>
 			<PieceView player={piece} />
 			{isSelected && (
@@ -35,6 +38,6 @@ export default function CellView({
 					className="absolute size-48 opacity-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
 				/>
 			)}
-		</button>
+		</div>
 	);
 }

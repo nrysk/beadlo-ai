@@ -20,7 +20,7 @@ export default function BoardView({
 	return (
 		<div
 			className={clsx(
-				"grid grid-cols-5 gap-4 bg-gray-300 p-4 rounded-2xl",
+				"grid grid-cols-5 gap-3 bg-linear-to-br from-gray-300 to-slate-300 p-4 rounded-2xl",
 				className,
 			)}
 		>

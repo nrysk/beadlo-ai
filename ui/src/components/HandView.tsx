@@ -22,39 +22,40 @@ export default function HandView({
 	return (
 		<button
 			className={clsx(
-				"flex flex-row gap-2 p-2 rounded-md ",
+				"flex flex-row gap-2 p-3 rounded-md bg-linear-to-br disabled:opacity-40",
 				{
-					"bg-red-300": player === Piece.Player1,
-					"bg-yellow-300": player === Piece.Player2,
+					"from-red-300 to-red-400 disabled:to-red-300":
+						player === Piece.Player1,
+					"from-yellow-300 to-yellow-400 disabled:to-yellow-300":
+						player === Piece.Player2,
 				},
 				className,
 			)}
 			onClick={onClick}
 			type="button"
+			disabled={count <= 0}
 		>
 			{/* count個の駒を表示 */}
 			<div
 				className={clsx("flex flex-row bg-white rounded-md p-2", {
-					"border-4 border-blue-500": isSelected,
+					"ring-4 ring-blue-400": isSelected,
 				})}
 			>
-				{Array.from({ length: maxCount }).map((_, index) =>
-					index < count ? (
-						<>
-							<PieceView
-								key={index}
-								player={player}
-								className="flex-1 w-full px-2"
-							/>
-							<span
-								key={`sp${index}`}
-								className="w-1 bg-stone-200 my-4 last:hidden"
-							/>
-						</>
-					) : (
-						<span key={index} className="flex-1 w-full px-2" />
-					),
-				)}
+				{Array.from({ length: maxCount }).map((_, index) => (
+					<>
+						<PieceView
+							key={index}
+							player={player}
+							className={clsx("flex-1 w-full px-2", {
+								grayscale: index >= count,
+							})}
+						/>
+						<span
+							key={`sp${index}`}
+							className="w-1 bg-stone-200 my-4 last:hidden"
+						/>
+					</>
+				))}
 			</div>
 		</button>
 	);
