@@ -1,6 +1,7 @@
 import { Piece } from "../../../engine/pkg/engine";
 import clsx from "clsx";
-import { Circle } from "lucide-react";
+import PieceRed from "../assets/piece-red.png";
+import PieceYellow from "../assets/piece-yellow.png";
 
 interface PieceViewProps {
 	player: Piece;
@@ -13,15 +14,11 @@ export default function PieceView({ player, className }: PieceViewProps) {
 	}
 
 	return (
-		<Circle
-			className={clsx(
-				"size-32",
-				{
-					"text-red-500": player === Piece.Player1,
-					"text-blue-500": player === Piece.Player2,
-				},
-				className,
-			)}
-		/>
+		<div className={clsx("w-full", className)}>
+			<img
+				src={player === Piece.Player1 ? PieceRed : PieceYellow}
+				alt={player === Piece.Player1 ? "Red Piece" : "Yellow Piece"}
+			/>
+		</div>
 	);
 }
