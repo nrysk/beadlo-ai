@@ -4,6 +4,7 @@ import init, { GameEngine, Piece } from "@engine";
 import HandView from "./components/HandView";
 import BoardView from "./components/BoardView";
 import AnalysisView from "./components/AnalysisView";
+import BoardControls from "./components/BoardControls";
 
 function App() {
 	const [engine, setEngine] = useState<GameEngine | null>(null);
@@ -72,6 +73,13 @@ function App() {
 
 	return engine ? (
 		<div className="min-h-svh flex flex-row justify-center items-center bg-white p-4 gap-4">
+			<BoardControls
+				onReset={() => {
+					if (!engine) return;
+					engine.reset();
+					syncGameState(engine);
+				}}
+			/>
 			<div className="flex flex-col w-lg justify-center items-center gap-4">
 				<HandView
 					player={Piece.Player1}

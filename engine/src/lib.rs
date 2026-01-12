@@ -29,6 +29,8 @@ pub enum Piece {
 pub enum Action {
     Put { index: u8, value: Piece },
     Flick { index: u8, dx: i8, dy: i8 },
+    // for Edit
+    Pick { index: u8 },
 }
 
 #[wasm_bindgen]
@@ -131,6 +133,12 @@ impl GameEngine {
                     cx = nx;
                     cy = ny;
                 }
+            }
+            Action::Pick { index } => {
+                if *index as usize >= BOARD_SIZE {
+                    return Err("Index out of bounds");
+                }
+                self.board[*index as usize] = Piece::Empty;
             }
         }
         Ok(())
