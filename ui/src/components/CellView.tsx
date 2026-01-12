@@ -8,6 +8,7 @@ interface CellViewProps {
 	isSelected: boolean;
 	onClick: () => void;
 	onFlick: (dx: number, dy: number) => void;
+	hintElement?: React.ReactNode;
 	className?: string;
 }
 
@@ -16,6 +17,7 @@ export default function CellView({
 	isSelected,
 	onClick,
 	onFlick,
+	hintElement,
 	className,
 }: CellViewProps) {
 	return (
@@ -38,6 +40,7 @@ export default function CellView({
 					className="absolute size-48 opacity-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
 				/>
 			)}
+			{hintElement}
 		</div>
 	);
 }

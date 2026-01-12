@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import init, { GameEngine, Piece } from "@engine";
 import HandView from "./components/HandView";
 import BoardView from "./components/BoardView";
+import AnalysisView from "./components/AnalysisView";
 
 function App() {
 	const [engine, setEngine] = useState<GameEngine | null>(null);
@@ -11,17 +12,28 @@ function App() {
 		p1: 0,
 		p2: 0,
 	});
+	const [bestActions, setBestActions] = useState({
+		p1: null as { type: string; data: JSON } | null,
+		p2: null as { type: string; data: JSON } | null,
+	});
 
 	const [selected, setSelected] = useState<
 		"Player1" | "Player2" | number | null
 	>(null);
+	const [hintAction, setHintAction] = useState<{
+		type: string;
+		data: JSON;
+	} | null>(null);
 
 	const syncGameState = useCallback((eng: GameEngine) => {
-		// setBoard(Array.from(eng.get_board()));
-		setBoard(eng.get_board());
+		setBoard(Array.from(eng.get_board()));
 		setHandCounts({
 			p1: eng.get_hand_count(Piece.Player1),
 			p2: eng.get_hand_count(Piece.Player2),
+		});
+		setBestActions({
+			p1: eng.calc_best_action(Piece.Player1, 5),
+			p2: eng.calc_best_action(Piece.Player2, 5),
 		});
 	}, []);
 
@@ -80,7 +92,7 @@ function App() {
 									type: "Put",
 									data: {
 										index,
-										value: Piece[selected],
+										value: selected,
 									},
 								});
 								setSelected(null);
@@ -98,6 +110,7 @@ function App() {
 						});
 						setSelected(null);
 					}}
+					hintAction={hintAction}
 					className="w-lg"
 				/>
 				<HandView
@@ -106,6 +119,20 @@ function App() {
 					isSelected={selected === "Player2"}
 					onClick={() => setSelected(selected === "Player2" ? null : "Player2")}
 					className="w-md"
+				/>
+			</div>
+			<div className="flex flex-col gap-4 w-3xs">
+				<AnalysisView
+					player={Piece.Player1}
+					action={bestActions.p1}
+					onHover={(action) => setHintAction(action)}
+					className="w-full"
+				/>
+				<AnalysisView
+					player={Piece.Player2}
+					action={bestActions.p2}
+					onHover={(action) => setHintAction(action)}
+					className="w-full"
 				/>
 			</div>
 		</div>
