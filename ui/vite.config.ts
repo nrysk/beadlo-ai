@@ -24,4 +24,5 @@ export default defineConfig({
 			allow: [".."],
 		},
 	},
+	base: "/beadlo-ai/",
 });

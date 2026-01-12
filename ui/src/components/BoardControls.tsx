@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { Recycle, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 interface BoardControlsProps {
 	onReset: () => void;
