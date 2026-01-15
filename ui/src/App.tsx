@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import {  useEffect, useState } from "react";
 
 import init, { GameEngine, Piece } from "@engine";
 import HandView from "./components/HandView";
@@ -25,18 +25,32 @@ function App() {
 		type: string;
 		data: JSON;
 	} | null>(null);
+	const [aiDepth1, setAiDepth1] = useState<number>(6);
+	const [aiDepth2, setAiDepth2] = useState<number>(6);
 
-	const syncGameState = useCallback((eng: GameEngine) => {
-		setBoard(Array.from(eng.get_board()));
-		setHandCounts({
-			p1: eng.get_hand_count(Piece.Player1),
-			p2: eng.get_hand_count(Piece.Player2),
-		});
-		setBestActions({
-			p1: eng.calc_best_action(Piece.Player1, 5),
-			p2: eng.calc_best_action(Piece.Player2, 5),
-		});
-	}, []);
+	const syncGameState = (eng: GameEngine) => {
+        setBoard(Array.from(eng.get_board()));
+        setHandCounts({
+            p1: eng.get_hand_count(Piece.Player1),
+            p2: eng.get_hand_count(Piece.Player2),
+        });
+        // 盤面が変わった瞬間は、古い解析結果を消しておく
+        setBestActions({ p1: null, p2: null }); 
+    };
+
+	useEffect(() => {
+        if (!engine) return;
+
+        const timerId = setTimeout(() => {
+            setBestActions({
+                p1: engine.calc_best_action(Piece.Player1, aiDepth1),
+                p2: engine.calc_best_action(Piece.Player2, aiDepth2),
+            });
+        }, 10); // 描画更新のために少し待つ
+
+        return () => clearTimeout(timerId);
+        
+    }, [board, aiDepth1, aiDepth2, engine]);
 
 	useEffect(() => {
 		// アンマウント済みか判定するフラグ
@@ -63,7 +77,7 @@ function App() {
 				localEngine.free();
 			}
 		};
-	}, [syncGameState]);
+	}, []);
 
 	const handleAction = (action: unknown) => {
 		if (!engine) return;
@@ -134,12 +148,16 @@ function App() {
 					player={Piece.Player1}
 					action={bestActions.p1}
 					onHover={(action) => setHintAction(action)}
+					depth={aiDepth1}
+					setDepth={setAiDepth1}
 					className="w-full"
 				/>
 				<AnalysisView
 					player={Piece.Player2}
 					action={bestActions.p2}
 					onHover={(action) => setHintAction(action)}
+					depth={aiDepth2}
+					setDepth={setAiDepth2}
 					className="w-full"
 				/>
 			</div>
