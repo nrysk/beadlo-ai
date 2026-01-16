@@ -27,6 +27,7 @@ function App() {
 	} | null>(null);
 	const [aiDepth1, setAiDepth1] = useState<number>(6);
 	const [aiDepth2, setAiDepth2] = useState<number>(6);
+	const [checkRepetition, setCheckRepetition] = useState<boolean>(true);
 
 	const syncGameState = (eng: GameEngine) => {
         setBoard(Array.from(eng.get_board()));
@@ -43,8 +44,8 @@ function App() {
 
         const timerId = setTimeout(() => {
             setBestActions({
-                p1: engine.calc_best_action(Piece.Player1, aiDepth1),
-                p2: engine.calc_best_action(Piece.Player2, aiDepth2),
+                p1: engine.calc_best_action(Piece.Player1, aiDepth1, checkRepetition),
+                p2: engine.calc_best_action(Piece.Player2, aiDepth2, checkRepetition),
             });
         }, 10); // 描画更新のために少し待つ
 
@@ -93,6 +94,9 @@ function App() {
 					engine.reset();
 					syncGameState(engine);
 				}}
+				checkRepetition={checkRepetition}
+				onToggleRepetition={(value) => setCheckRepetition(value)}
+				className=""
 			/>
 			<div className="flex flex-col w-lg justify-center items-center gap-4">
 				<HandView

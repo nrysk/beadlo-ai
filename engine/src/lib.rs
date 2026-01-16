@@ -37,6 +37,7 @@ pub enum Action {
 #[derive(Clone)]
 pub struct GameEngine {
     board: Vec<Piece>,
+    prev_board: Option<Vec<Piece>>,
 }
 
 #[wasm_bindgen]
@@ -44,11 +45,13 @@ impl GameEngine {
     pub fn new() -> GameEngine {
         GameEngine {
             board: vec![Piece::Empty; BOARD_SIZE],
+            prev_board: None,
         }
     }
 
     pub fn reset(&mut self) {
         self.board = vec![Piece::Empty; BOARD_SIZE];
+        self.prev_board = None;
     }
 
     pub fn get_board(&self) -> Vec<u8> {
@@ -65,8 +68,13 @@ impl GameEngine {
         count
     }
 
-    pub fn calc_best_action(&self, player: Piece, depth: usize) -> Result<JsValue, JsValue> {
-        let (best_score, best_action) = self.alpha_beta(player, depth, -INF, INF);
+    pub fn calc_best_action(
+        &self,
+        player: Piece,
+        depth: usize,
+        check_repetition: bool,
+    ) -> Result<JsValue, JsValue> {
+        let (best_score, best_action) = self.alpha_beta(player, depth, -INF, INF, check_repetition);
 
         match best_action {
             Some(action) => Ok(serde_wasm_bindgen::to_value(&action)?),
@@ -85,12 +93,14 @@ impl GameEngine {
 
 #[wasm_bindgen]
 impl GameEngine {
-    pub fn debug_legal_actions(&self, player: Piece) -> JsValue {
-        let actions = self.generate_legal_actions(player);
+    pub fn debug_legal_actions(&self, player: Piece, check_repetition: bool) -> JsValue {
+        let actions = self.generate_legal_actions(player, check_repetition);
         serde_wasm_bindgen::to_value(&actions).unwrap()
     }
 
     fn apply_action_internal(&mut self, action: &Action) -> Result<(), &'static str> {
+        let prev_board = self.board.clone();
+
         match action {
             Action::Put { index, value } => {
                 if *index as usize >= BOARD_SIZE {
@@ -141,10 +151,12 @@ impl GameEngine {
                 self.board[*index as usize] = Piece::Empty;
             }
         }
+
+        self.prev_board = Some(prev_board);
         Ok(())
     }
 
-    fn generate_legal_actions(&self, player: Piece) -> Vec<Action> {
+    fn generate_legal_actions(&self, player: Piece, check_repetition: bool) -> Vec<Action> {
         let mut actions = Vec::new();
 
         // 可能なPutアクションの生成フェーズ
@@ -229,6 +241,19 @@ impl GameEngine {
                 }
             }
         }
+
+        // 盤面が変化しないアクションは除外
+        if check_repetition {
+            if let Some(prev_board) = &self.prev_board {
+                actions.retain(|action| {
+                    let mut test_engine = self.clone();
+                    if test_engine.apply_action_internal(action).is_err() {
+                        return false;
+                    }
+                    test_engine.board != *prev_board
+                });
+            }
+        }
         // return
         actions
     }
@@ -239,6 +264,7 @@ impl GameEngine {
         depth: usize,
         mut alpha: i32,
         mut beta: i32,
+        check_repetition: bool,
     ) -> (i32, Option<Action>) {
         let score = self.evaluate(player);
 
@@ -246,7 +272,7 @@ impl GameEngine {
             return (score, None);
         }
 
-        let legal_actions = self.generate_legal_actions(player);
+        let legal_actions = self.generate_legal_actions(player, check_repetition);
         // 打つ手は絶対に存在するが，念のためのガード
         if legal_actions.is_empty() {
             return (score, None);
@@ -262,7 +288,8 @@ impl GameEngine {
             }
             // actionを適用できたら次の手番へ
             let opponent = Self::get_opponent(player);
-            let (opponent_score, _) = next_engine.alpha_beta(opponent, depth - 1, -beta, -alpha);
+            let (opponent_score, _) =
+                next_engine.alpha_beta(opponent, depth - 1, -beta, -alpha, check_repetition);
 
             let current_score = -opponent_score;
             if current_score > best_score {
